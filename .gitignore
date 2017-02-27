@@ -1,0 +1,8 @@
+
+\.cache/v/cache/
+
+\.idea/
+
+tests/\.cache/v/cache/
+
+*.pyc
