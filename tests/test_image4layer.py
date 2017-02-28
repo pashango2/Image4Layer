@@ -15,3 +15,5 @@ def test_layer():
 
     Image4Layer.over_lay(img1, a_img)
     Image4Layer.over_lay(a_img, img1)
+
+    Image4Layer.pin_light(img1, img2)
