@@ -3,8 +3,8 @@ from distutils.core import setup
 setup(
     name='Image4Layer',
     version='0.1',
-    packages=['sphinx_qsp', 'image4layer'],
-    package_dir={'': 'sphinx-guistart'},
+    packages=['image4layer'],
+    package_dir={'image4layer': 'image4layer'},
     url='',
     license='MIT',
     author='Toshiyuki Ishii',
