@@ -6,7 +6,8 @@
     :copyright: Copyright 2007-2017 Toshiyuki Ishii.
     :license: MIT, see LICENSE for details.
 """
-from PIL import Image, ImageMath
+# noinspection PyPackageRequirements
+from PIL import Image, ImageMath  # noqa
 
 
 class Image4Layer(object):
@@ -91,8 +92,7 @@ class Image4Layer(object):
         """
         return separate_blend(
             cb, cs,
-            None,
-            "min(a, 2 * b) * (b < 128) + max(a, 2 * (b - 128)) * (b >= 128)"
+            eval_str="min(a, 2 * b) * (b < 128) + max(a, 2 * (b - 128)) * (b >= 128)"
         )
 
     @staticmethod
@@ -126,15 +126,6 @@ class Image4Layer(object):
         return no_separate_blend(cb, cs, saturation)
 
     @staticmethod
-    def luminosity(cb, cs):
-        """
-        :rtype: Image.Image
-        :type cb: Image.Image
-        :type cs: Image.Image
-        """
-        return no_separate_blend(cb, cs, luminosity)
-
-    @staticmethod
     def color(cb, cs):
         """
         :rtype: Image.Image
@@ -144,45 +135,95 @@ class Image4Layer(object):
         return no_separate_blend(cb, cs, color)
 
     @staticmethod
+    def luminosity(cb, cs):
+        """
+        :rtype: Image.Image
+        :type cb: Image.Image
+        :type cs: Image.Image
+        """
+        return no_separate_blend(cb, cs, luminosity)
+
+    @staticmethod
     def difference(cb, cs):
-        return separate_blend(cb, cs, None, "abs(a - b)")
+        """
+        :rtype: Image.Image
+        :type cb: Image.Image
+        :type cs: Image.Image
+        """
+        return separate_blend(cb, cs, eval_str="abs(a - b)")
 
     @staticmethod
     def screen(cb, cs):
-        return separate_blend(cb, cs, None, "a + b - (a * b / 255)")
+        """
+        :rtype: Image.Image
+        :type cb: Image.Image
+        :type cs: Image.Image
+        """
+        return separate_blend(cb, cs, eval_str="a + b - (a * b / 255)")
 
     @staticmethod
     def linear_dodge(cb, cs):
-        return separate_blend(cb, cs, None, "a + b")
+        """
+        :rtype: Image.Image
+        :type cb: Image.Image
+        :type cs: Image.Image
+        """
+        return separate_blend(cb, cs, eval_str="a + b")
 
     @staticmethod
     def subtract(cb, cs):
-        return separate_blend(cb, cs, None, "a - b")
+        """
+        :rtype: Image.Image
+        :type cb: Image.Image
+        :type cs: Image.Image
+        """
+        return separate_blend(cb, cs, eval_str="a - b")
 
     @staticmethod
     def multiply(cb, cs):
-        return separate_blend(cb, cs, None, "a * b / 255")
+        """
+        :rtype: Image.Image
+        :type cb: Image.Image
+        :type cs: Image.Image
+        """
+        return separate_blend(cb, cs, eval_str="a * b / 255")
 
     @staticmethod
     def lighten(cb, cs):
-        return separate_blend(cb, cs, None, "max(a, b)")
+        """
+        :rtype: Image.Image
+        :type cb: Image.Image
+        :type cs: Image.Image
+        """
+        return separate_blend(cb, cs, eval_str="max(a, b)")
 
     @staticmethod
     def darken(cb, cs):
-        return separate_blend(cb, cs, None, "min(a, b)")
+        """
+        :rtype: Image.Image
+        :type cb: Image.Image
+        :type cs: Image.Image
+        """
+        return separate_blend(cb, cs, eval_str="min(a, b)")
 
 
-def separate_blend(cb, cs, func, eval_str="func(float(a), float(b))"):
+def separate_blend(cb, cs, func=None, eval_str="func(float(a), float(b))"):
+    """
+    :type cb: Image.Image
+    :type cs: Image.Image
+    :type func: (ImageMath._Operand, ImageMath._Operand) -> ImageMath._Operand | None
+    :type eval_str: str
+    :rtype: Image.Image
+    """
     cs_alpha = cs.split()[-1] if _check_alpha(cs) else None
     cb_alpha = cb.split()[-1] if _check_alpha(cb) else None
 
     num_bands = len(cb.getbands())
 
     if num_bands > 1:
-        bands = [
-            ImageMath.eval(eval_str, func=func, a=a, b=b).convert("L")
-            for a, b in _band_pair(cb, cs)
-        ]
+        bands = []
+        for a, b in _band_pair(cb, cs):
+            bands.append(ImageMath.eval(eval_str, func=func, a=a, b=b).convert("L"))
 
         if len(bands) < num_bands:
             bands += cb.split()[len(bands):]
@@ -204,30 +245,28 @@ def separate_blend(cb, cs, func, eval_str="func(float(a), float(b))"):
 
 
 def no_separate_blend(cb, cs, func):
+    """
+    :type cb: Image.Image
+    :type cs: Image.Image
+    :type func: (tuple(ImageMath._Operand), tuple(ImageMath._Operand)) -> Image.Image
+    :rtype: Image.Image
+    """
     cs_alpha = cs.split()[-1] if _check_alpha(cs) else None
     cb_alpha = cb.split()[-1] if _check_alpha(cb) else None
 
     if cs_alpha:
-        cs = Image.composite(
-            cs.convert("RGB"),
-            Image.new("RGB", cs.size, (0, 0, 0)),
-            cs_alpha
-        )
+        cs = Image.composite(cs.convert("RGB"), Image.new("RGB", cs.size, (0, 0, 0)), cs_alpha)
 
     cb_pack = [ImageMath.eval("float(c)/255", c=c) for c in cb.split()]
     cs_pack = [ImageMath.eval("float(c)/255", c=c) for c in cs.split()]
 
     r = ImageMath.eval(
-        "func(cbr, cbg, cbb, csr, csg, csb)",
+        "func((cbr, cbg, cbb), (csr, csg, csb))",
         func=func,
         cbr=cb_pack[0], cbg=cb_pack[1], cbb=cb_pack[2],
         csr=cs_pack[0], csg=cs_pack[1], csb=cs_pack[2],
     )
-
-    result = Image.merge(
-        "RGB",
-         [ImageMath.imagemath_convert(c * 255, "L").im for c in r]
-    )
+    result = Image.merge("RGB", [ImageMath.imagemath_convert(c * 255, "L").im for c in r])
 
     if cs_alpha:
         r = cb.copy()
@@ -241,6 +280,11 @@ def no_separate_blend(cb, cs, func):
 
 
 def _band_pair(cb, cs):
+    """
+    :type cb: Image.Image
+    :type cs: Image.Image
+    :rtype: collections.Iterable[Image.Image, Image.Image]
+    """
     bands = []
     for img in (cb, cs):
         if _check_alpha(img):
@@ -255,20 +299,37 @@ def _band_pair(cb, cs):
 
 
 def _check_alpha(img):
+    """
+    :type img: Image.Image
+    :rtype: bool
+    """
     return img.mode in ("RGBA", "LA")
 
 
 def lum(c):
+    """
+    :type c: tuple(ImageMath._Operand)
+    :rtype: ImageMath._Operand
+    """
     return (c[0] * .298912) + (c[1] * 0.586611) + (c[2] * 0.114478)
 
 
 def sat(c):
+    """
+    :type c: tuple(ImageMath._Operand)
+    :rtype: ImageMath._Operand
+    """
     x = ImageMath.imagemath_max(ImageMath.imagemath_max(c[0], c[1]), c[2])
     n = ImageMath.imagemath_min(ImageMath.imagemath_min(c[0], c[1]), c[2])
     return ImageMath.imagemath_float(x - n)
 
 
 def set_sat(c, s):
+    """
+    :type c: tuple(ImageMath._Operand)
+    :type s: ImageMath._Operand
+    :rtype: tuple(ImageMath._Operand)
+    """
     x = ImageMath.imagemath_max(ImageMath.imagemath_max(c[0], c[1]), c[2])
     n = ImageMath.imagemath_min(ImageMath.imagemath_min(c[0], c[1]), c[2])
     cs = x - n
@@ -286,10 +347,14 @@ def set_sat(c, s):
         cc = ((s * max_area) + mid) * not_even_area
         result.append(cc)
 
-    return result
+    return tuple(result)
 
 
 def clip_color(c):
+    """
+    :type c: tuple(ImageMath._Operand)
+    :rtype: tuple(ImageMath._Operand)
+    """
     l = lum(c)
     x = ImageMath.imagemath_max(ImageMath.imagemath_max(c[0], c[1]), c[2])
     n = ImageMath.imagemath_min(ImageMath.imagemath_min(c[0], c[1]), c[2])
@@ -316,37 +381,72 @@ def clip_color(c):
 
 
 def set_lum(c, l):
+    """
+    :type c: tuple(ImageMath._Operand)
+    :type l: ImageMath._Operand
+    :rtype: tuple(ImageMath._Operand)
+    """
     d = l - lum(c)
     return clip_color((c[0] + d, c[1] + d, c[2] + d))
 
 
 def _overlay(a, b):
+    """
+    :type a: ImageMath._Operand
+    :type b: ImageMath._Operand
+    :rtype: ImageMath._Operand
+    """
     return _hard_light(b, a)
 
 
 def _soft_light(a, b):
+    """
+    :type a: ImageMath._Operand
+    :type b: ImageMath._Operand
+    :rtype: ImageMath._Operand
+    """
     _cl = (a / 255) ** ((255 - b) / 128) * 255
     _ch = (a / 255) ** (128 / b) * 255
     return _cl * (b < 128) + _ch * (b >= 128)
 
 
 def _hard_light(a, b):
+    """
+    :type a: ImageMath._Operand
+    :type b: ImageMath._Operand
+    :rtype: ImageMath._Operand
+    """
     _cl = 2 * a * b / 255
     _ch = 2.0 * (a + b - a * b / 255.0) - 255.0
     return _cl * (b < 128) + _ch * (b >= 128)
 
 
 def _linear_light(a, b):
+    """
+    :type a: ImageMath._Operand
+    :type b: ImageMath._Operand
+    :rtype: ImageMath._Operand
+    """
     _cl = a + (2.0 * b) - 255.0
     _ch = a + (2.0 * (b - 128.0))
     return _cl * (b < 128) + _ch * (b >= 128)
 
 
 def _exclusion(a, b):
+    """
+    :type a: ImageMath._Operand
+    :type b: ImageMath._Operand
+    :rtype: ImageMath._Operand
+    """
     return a + b - ((2.0 * a * b) / 255.0)
 
 
 def _color_burn(a, b):
+    """
+    :type a: ImageMath._Operand
+    :type b: ImageMath._Operand
+    :rtype: ImageMath._Operand
+    """
     non_zero_area = (b != 0)
     fa = a / 255.0
     fb = b / 255.0
@@ -354,36 +454,59 @@ def _color_burn(a, b):
 
 
 def _color_dodge(a, b):
+    """
+    :type a: ImageMath._Operand
+    :type b: ImageMath._Operand
+    :rtype: ImageMath._Operand
+    """
     zero_area = (b == 255)
     dodge = (a / (255 - b)) * 255.0
     return dodge + (zero_area * 255)
 
 
+# noinspection PyTypeChecker
 def _vivid_light(a, b):
+    """
+    :type a: ImageMath._Operand
+    :type b: ImageMath._Operand
+    :rtype: ImageMath._Operand
+    """
     color_burn = _color_burn(a, b * 2)
     color_dodge = _color_dodge(a, 2 * (b - 128))
     return color_burn * (b < 128) + color_dodge * (b >= 128)
 
 
-def hue(cbr, cbg, cbb, csr, csg, csb):
-    cs = (csr, csg, csb)
-    cb = (cbr, cbg, cbb)
+def hue(cb, cs):
+    """
+    :type cb: (ImageMath._Operand)
+    :type cs: (ImageMath._Operand)
+    :rtype: (ImageMath._Operand)
+    """
     return set_lum(set_sat(cs, sat(cb)), lum(cb))
 
 
-def saturation(cbr, cbg, cbb, csr, csg, csb):
-    cs = (csr, csg, csb)
-    cb = (cbr, cbg, cbb)
+def saturation(cb, cs):
+    """
+    :type cb: (ImageMath._Operand)
+    :type cs: (ImageMath._Operand)
+    :rtype: (ImageMath._Operand)
+    """
     return set_lum(set_sat(cb, sat(cs)), lum(cb))
 
 
-def color(cbr, cbg, cbb, csr, csg, csb):
-    cs = (csr, csg, csb)
-    cb = (cbr, cbg, cbb)
+def color(cb, cs):
+    """
+    :type cb: (ImageMath._Operand)
+    :type cs: (ImageMath._Operand)
+    :rtype: (ImageMath._Operand)
+    """
     return set_lum(cs, lum(cb))
 
 
-def luminosity(cbr, cbg, cbb, csr, csg, csb):
-    cs = (csr, csg, csb)
-    cb = (cbr, cbg, cbb)
+def luminosity(cb, cs):
+    """
+    :type cb: (ImageMath._Operand)
+    :type cs: (ImageMath._Operand)
+    :rtype: (ImageMath._Operand)
+    """
     return set_lum(cb, lum(cs))
