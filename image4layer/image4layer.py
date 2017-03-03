@@ -6,8 +6,7 @@
     :copyright: Copyright 2007-2017 Toshiyuki Ishii.
     :license: MIT, see LICENSE for details.
 """
-# noinspection PyPackageRequirements
-from PIL import Image, ImageMath  # noqa
+from PIL import Image, ImageMath
 
 
 class Image4Layer(object):
@@ -180,9 +179,10 @@ def separate_blend(cb, cs, func, eval_str="func(float(a), float(b))"):
     num_bands = len(cb.getbands())
 
     if num_bands > 1:
-        bands = []
-        for a, b in _band_pair(cb, cs):
-            bands.append(ImageMath.eval(eval_str, func=func, a=a, b=b).convert("L"))
+        bands = [
+            ImageMath.eval(eval_str, func=func, a=a, b=b).convert("L")
+            for a, b in _band_pair(cb, cs)
+        ]
 
         if len(bands) < num_bands:
             bands += cb.split()[len(bands):]
@@ -208,7 +208,11 @@ def no_separate_blend(cb, cs, func):
     cb_alpha = cb.split()[-1] if _check_alpha(cb) else None
 
     if cs_alpha:
-        cs = Image.composite(cs.convert("RGB"), Image.new("RGB", cs.size, (0, 0, 0)), cs_alpha)
+        cs = Image.composite(
+            cs.convert("RGB"),
+            Image.new("RGB", cs.size, (0, 0, 0)),
+            cs_alpha
+        )
 
     cb_pack = [ImageMath.eval("float(c)/255", c=c) for c in cb.split()]
     cs_pack = [ImageMath.eval("float(c)/255", c=c) for c in cs.split()]
@@ -219,7 +223,11 @@ def no_separate_blend(cb, cs, func):
         cbr=cb_pack[0], cbg=cb_pack[1], cbb=cb_pack[2],
         csr=cs_pack[0], csg=cs_pack[1], csb=cs_pack[2],
     )
-    result = Image.merge("RGB", [ImageMath.imagemath_convert(c * 255, "L").im for c in r])
+
+    result = Image.merge(
+        "RGB",
+         [ImageMath.imagemath_convert(c * 255, "L").im for c in r]
+    )
 
     if cs_alpha:
         r = cb.copy()
