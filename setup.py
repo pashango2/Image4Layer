@@ -1,8 +1,9 @@
 from distutils.core import setup
+from image4layer import __version__
 
 setup(
     name='Image4Layer',
-    version='0.1',
+    version=__version__,
     packages=['image4layer'],
     package_dir={'image4layer': 'image4layer'},
     url='',
