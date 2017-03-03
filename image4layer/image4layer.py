@@ -7,244 +7,234 @@
     :license: MIT, see LICENSE for details.
 """
 # noinspection PyPackageRequirements
-from PIL import Image, ImageChops, ImageMath  # noqa
+from PIL import Image, ImageMath  # noqa
 
 
 class Image4Layer(object):
     @staticmethod
-    def overlay(img1, img2):
+    def overlay(cb, cs):
         """
         :rtype: Image.Image
-        :type img1: Image.Image
-        :type img2: Image.Image
+        :type cb: Image.Image
+        :type cs: Image.Image
         """
-        return separate_blend(img1, img2, Image4Layer._overlay)
+        return separate_blend(cb, cs, _overlay)
 
     @staticmethod
-    def _overlay(a, b):
-        return Image4Layer._hard_light(b, a)
-
-    @staticmethod
-    def soft_light(img1, img2):
+    def soft_light(cb, cs):
         """
         :rtype: Image.Image
-        :type img1: Image.Image
-        :type img2: Image.Image
+        :type cb: Image.Image
+        :type cs: Image.Image
         """
-        return separate_blend(img1, img2, Image4Layer._soft_light)
+        return separate_blend(cb, cs, _soft_light)
 
     @staticmethod
-    def _soft_light(a, b):
-        _cl = (a / 255) ** ((255 - b) / 128) * 255
-        _ch = (a / 255) ** (128 / b) * 255
-        return _cl * (b < 128) + _ch * (b >= 128)
-
-    @staticmethod
-    def hard_light(img1, img2):
+    def hard_light(cb, cs):
         """
         :rtype: Image.Image
-        :type img1: Image.Image
-        :type img2: Image.Image
+        :type cb: Image.Image
+        :type cs: Image.Image
         """
-        return separate_blend(img1, img2, Image4Layer._hard_light)
+        return separate_blend(cb, cs, _hard_light)
 
     @staticmethod
-    def _hard_light(a, b):
-        _cl = 2 * a * b / 255
-        _ch = 2.0 * (a + b - a * b / 255.0) - 255.0
-        return _cl * (b < 128) + _ch * (b >= 128)
-
-    @staticmethod
-    def linear_light(img1, img2):
+    def linear_light(cb, cs):
         """
         base + 2 * ref - 1      | if ref < 0.5
         base + 2 * (ref - 0.5)  | otherwise
 
         :rtype: Image.Image
-        :type img1: Image.Image
-        :type img2: Image.Image
+        :type cb: Image.Image
+        :type cs: Image.Image
         """
-        return separate_blend(img1, img2, Image4Layer._linear_light)
+        return separate_blend(cb, cs, _linear_light)
 
     @staticmethod
-    def _linear_light(a, b):
-        _cl = a + (2.0 * b) - 255.0
-        _ch = a + (2.0 * (b - 128.0))
-        return _cl * (b < 128) + _ch * (b >= 128)
-
-    @staticmethod
-    def exclusion(img1, img2):
+    def exclusion(cb, cs):
         """
         base + ref - (2 * base * ref)
 
         :rtype: Image.Image
-        :type img1: Image.Image
-        :type img2: Image.Image
+        :type cb: Image.Image
+        :type cs: Image.Image
         """
-        return separate_blend(img1, img2, Image4Layer._exclusion)
+        return separate_blend(cb, cs, _exclusion)
 
     @staticmethod
-    def _exclusion(a, b):
-        return a + b - ((2.0 * a * b) / 255.0)
-
-    @staticmethod
-    def color_burn(img1, img2):
+    def color_burn(cb, cs):
         """
         1 - (1 - base) / ref
 
         :rtype: Image.Image
-        :type img1: Image.Image
-        :type img2: Image.Image
+        :type cb: Image.Image
+        :type cs: Image.Image
         """
-        return separate_blend(img1, img2, Image4Layer._color_burn)
+        return separate_blend(cb, cs, _color_burn)
 
     @staticmethod
-    def _color_burn(a, b):
-        non_zero_area = (b != 0)
-        fa = a / 255.0
-        fb = b / 255.0
-        return (1.0 - ((1.0 - fa) / fb)) * 255.0 * non_zero_area
-
-    @staticmethod
-    def color_dodge(img1, img2):
+    def color_dodge(cb, cs):
         """
         base / (1 - ref)
 
         :rtype: Image.Image
-        :type img1: Image.Image
-        :type img2: Image.Image
+        :type cb: Image.Image
+        :type cs: Image.Image
         """
-        return separate_blend(img1, img2, Image4Layer._color_dodge)
+        return separate_blend(cb, cs, _color_dodge)
 
     @staticmethod
-    def _color_dodge(a, b):
-        zero_area = (b == 255)
-        dodge = (a / (255 - b)) * 255.0
-        return dodge + (zero_area * 255)
-
-    @staticmethod
-    def pin_light(img1, img2):
+    def pin_light(cb, cs):
         """
         :rtype: Image.Image
-        :type img1: Image.Image
-        :type img2: Image.Image
+        :type cb: Image.Image
+        :type cs: Image.Image
         """
         return separate_blend(
-            img1, img2,
+            cb, cs,
             None,
             "min(a, 2 * b) * (b < 128) + max(a, 2 * (b - 128)) * (b >= 128)"
         )
 
     @staticmethod
-    def vivid(img1, img2):
+    def vivid(cb, cs):
         """
         1 - (1 - base) / (2 * ref)    | if ref < 0.5
         base / (1 - 2 * (ref - 0.5))  | otherwise
 
         :rtype: Image.Image
-        :type img1: Image.Image
-        :type img2: Image.Image
+        :type cb: Image.Image
+        :type cs: Image.Image
         """
-        return separate_blend(img1, img2, Image4Layer._vivid)
+        return separate_blend(cb, cs, _vivid)
 
     @staticmethod
-    def _vivid(a, b):
-        color_burn = Image4Layer._color_burn(a, b * 2)
-        color_dodge = Image4Layer._color_dodge(a, 2 * (b - 128))
-        return color_burn * (b < 128) + color_dodge * (b >= 128)
-
-    @staticmethod
-    def hue(img1, img2):
+    def hue(cb, cs):
         """
         :rtype: Image.Image
-        :type img1: Image.Image
-        :type img2: Image.Image
+        :type cb: Image.Image
+        :type cs: Image.Image
         """
-        return no_separate_blend(img1, img2, hue)
+        return no_separate_blend(cb, cs, hue)
 
     @staticmethod
-    def saturation(img1, img2):
-        """
-        :rtype: Image.Image
-        :type img1: Image.Image
-        :type img2: Image.Image
-        """
-        return no_separate_blend(img1, img2, saturation)
-
-    @staticmethod
-    def luminosity(img1, img2):
+    def saturation(cb, cs):
         """
         :rtype: Image.Image
-        :type img1: Image.Image
-        :type img2: Image.Image
+        :type cb: Image.Image
+        :type cs: Image.Image
         """
-        return no_separate_blend(img1, img2, luminosity)
+        return no_separate_blend(cb, cs, saturation)
 
     @staticmethod
-    def color(img1, img2):
+    def luminosity(cb, cs):
         """
         :rtype: Image.Image
-        :type img1: Image.Image
-        :type img2: Image.Image
+        :type cb: Image.Image
+        :type cs: Image.Image
         """
-        return no_separate_blend(img1, img2, color)
+        return no_separate_blend(cb, cs, luminosity)
 
     @staticmethod
-    def difference(img1, img2):
-        return separate_blend(img1, img2, None, "abs(a - b)")
+    def color(cb, cs):
+        """
+        :rtype: Image.Image
+        :type cb: Image.Image
+        :type cs: Image.Image
+        """
+        return no_separate_blend(cb, cs, color)
 
     @staticmethod
-    def screen(img1, img2):
-        return separate_blend(img1, img2, None, "a + b - (a * b / 255)")
+    def difference(cb, cs):
+        return separate_blend(cb, cs, None, "abs(a - b)")
 
     @staticmethod
-    def linear_dodge(img1, img2):
-        return separate_blend(img1, img2, None, "a + b")
+    def screen(cb, cs):
+        return separate_blend(cb, cs, None, "a + b - (a * b / 255)")
 
     @staticmethod
-    def subtract(img1, img2):
-        return separate_blend(img1, img2, None, "a - b")
+    def linear_dodge(cb, cs):
+        return separate_blend(cb, cs, None, "a + b")
 
     @staticmethod
-    def multiply(img1, img2):
-        return separate_blend(img1, img2, None, "a * b / 255")
+    def subtract(cb, cs):
+        return separate_blend(cb, cs, None, "a - b")
 
     @staticmethod
-    def lighten(img1, img2):
-        return separate_blend(img1, img2, None, "max(a, b)")
+    def multiply(cb, cs):
+        return separate_blend(cb, cs, None, "a * b / 255")
 
     @staticmethod
-    def darken(img1, img2):
-        return separate_blend(img1, img2, None, "min(a, b)")
+    def lighten(cb, cs):
+        return separate_blend(cb, cs, None, "max(a, b)")
+
+    @staticmethod
+    def darken(cb, cs):
+        return separate_blend(cb, cs, None, "min(a, b)")
 
 
-def separate_blend(img1, img2, func, eval_str="func(float(a), float(b))"):
-    num_bands = len(img1.getbands())
+def separate_blend(cb, cs, func, eval_str="func(float(a), float(b))"):
+    cs_alpha = cs.split()[-1] if _check_alpha(cs) else None
+    cb_alpha = cb.split()[-1] if _check_alpha(cb) else None
+
+    num_bands = len(cb.getbands())
 
     if num_bands > 1:
         bands = []
-        for a, b in _band_pair(img1, img2):
+        for a, b in _band_pair(cb, cs):
             bands.append(ImageMath.eval(eval_str, func=func, a=a, b=b).convert("L"))
 
         if len(bands) < num_bands:
-            bands += img1.split()[len(bands):]
+            bands += cb.split()[len(bands):]
 
-        img = Image.merge(img1.mode, bands)
+        img = Image.merge(cb.mode, bands)
 
-        # img2 has alpha
-        if _check_alpha(img2):
-            base_img = img1.copy()
-            base_img.paste(img, mask=img2.split()[-1])
+        # cs has alpha
+        if cs_alpha:
+            base_img = img.copy()
+            base_img.paste(img, mask=cs_alpha)
             img = base_img
+
+        if cb_alpha:
+            img.putalpha(cb_alpha)
 
         return img
     else:
-        return ImageMath.eval(eval_str, func=func, a=img1, b=img2).convert(img1.mode)
+        return ImageMath.eval(eval_str, func=func, a=cb, b=cs).convert(cb.mode)
 
 
-def _band_pair(img1, img2):
+def no_separate_blend(cb, cs, func):
+    cs_alpha = cs.split()[-1] if _check_alpha(cs) else None
+    cb_alpha = cb.split()[-1] if _check_alpha(cb) else None
+
+    if cs_alpha:
+        cs = Image.composite(cs.convert("RGB"), Image.new("RGB", cs.size, (0, 0, 0)), cs_alpha)
+
+    cb_pack = [ImageMath.eval("float(c)/255", c=c) for c in cb.split()]
+    cs_pack = [ImageMath.eval("float(c)/255", c=c) for c in cs.split()]
+
+    r = ImageMath.eval(
+        "func(cbr, cbg, cbb, csr, csg, csb)",
+        func=func,
+        cbr=cb_pack[0], cbg=cb_pack[1], cbb=cb_pack[2],
+        csr=cs_pack[0], csg=cs_pack[1], csb=cs_pack[2],
+    )
+    result = Image.merge("RGB", [ImageMath.imagemath_convert(c * 255, "L").im for c in r])
+
+    if cs_alpha:
+        r = cb.copy()
+        r.paste(result, mask=cs_alpha)
+        result = r
+
+    if cb_alpha:
+        result.putalpha(cb_alpha)
+
+    return result
+
+
+def _band_pair(cb, cs):
     bands = []
-    for img in (img1, img2):
+    for img in (cb, cs):
         if _check_alpha(img):
             bands.append(img.split()[:-1])
         else:
@@ -258,32 +248,6 @@ def _band_pair(img1, img2):
 
 def _check_alpha(img):
     return img.mode in ("RGBA", "LA")
-
-
-def no_separate_blend(cb, cs, func):
-    if cs.mode in ("RGBA", "LA"):
-        alpha = cs.split()[-1]
-        cs = Image.composite(cs.convert("RGB"), Image.new("RGB", cs.size, (0, 0, 0)), cs.split()[-1])
-    else:
-        alpha = None
-
-    cb_pack = [ImageMath.eval("float(c)/255", c=c) for c in cb.split()]
-    cs_pack = [ImageMath.eval("float(c)/255", c=c) for c in cs.convert("RGB").split()]
-
-    r = ImageMath.eval(
-        "func(cbr, cbg, cbb, csr, csg, csb)",
-        func=func,
-        cbr=cb_pack[0], cbg=cb_pack[1], cbb=cb_pack[2],
-        csr=cs_pack[0], csg=cs_pack[1], csb=cs_pack[2],
-    )
-    rr = Image.merge("RGB", [ImageMath.imagemath_convert(c * 255, "L").im for c in r])
-
-    if alpha:
-        result = cb.copy()
-        result.paste(rr, mask=alpha)
-    else:
-        result = rr
-    return result
 
 
 def lum(c):
@@ -332,13 +296,13 @@ def clip_color(c):
         c = [
             (_c * (n_l_0 ^ 1)) + ((l + ((_c - l) * l / l_m_n)) * n_l_0)
             for _c in c
-            ]
+        ]
 
     if bool(x_b_1):
         c = [
             (_c * (x_b_1 ^ 1)) + ((l + ((_c - l) * m_l / x_m_l)) * x_b_1)
             for _c in c
-            ]
+        ]
 
     return c
 
@@ -346,6 +310,51 @@ def clip_color(c):
 def set_lum(c, l):
     d = l - lum(c)
     return clip_color((c[0] + d, c[1] + d, c[2] + d))
+
+
+def _overlay(a, b):
+    return _hard_light(b, a)
+
+
+def _soft_light(a, b):
+    _cl = (a / 255) ** ((255 - b) / 128) * 255
+    _ch = (a / 255) ** (128 / b) * 255
+    return _cl * (b < 128) + _ch * (b >= 128)
+
+
+def _hard_light(a, b):
+    _cl = 2 * a * b / 255
+    _ch = 2.0 * (a + b - a * b / 255.0) - 255.0
+    return _cl * (b < 128) + _ch * (b >= 128)
+
+
+def _linear_light(a, b):
+    _cl = a + (2.0 * b) - 255.0
+    _ch = a + (2.0 * (b - 128.0))
+    return _cl * (b < 128) + _ch * (b >= 128)
+
+
+def _exclusion(a, b):
+    return a + b - ((2.0 * a * b) / 255.0)
+
+
+def _color_burn(a, b):
+    non_zero_area = (b != 0)
+    fa = a / 255.0
+    fb = b / 255.0
+    return (1.0 - ((1.0 - fa) / fb)) * 255.0 * non_zero_area
+
+
+def _color_dodge(a, b):
+    zero_area = (b == 255)
+    dodge = (a / (255 - b)) * 255.0
+    return dodge + (zero_area * 255)
+
+
+def _vivid(a, b):
+    color_burn = _color_burn(a, b * 2)
+    color_dodge = _color_dodge(a, 2 * (b - 128))
+    return color_burn * (b < 128) + color_dodge * (b >= 128)
 
 
 def hue(cbr, cbg, cbb, csr, csg, csb):

@@ -29,10 +29,10 @@ def test_hue():
     img1 = Image.open("sample.png")
     img2 = Image.open("color.png")
 
-    Image4Layer.hue(img1, img2).show()
-    # Image4Layer.saturation(img1, img2)
-    # Image4Layer.luminosity(img1, img2)
-    # Image4Layer.color(img1, img2)
+    Image4Layer.hue(img1, img2)
+    Image4Layer.saturation(img1, img2)
+    Image4Layer.luminosity(img1, img2)
+    Image4Layer.color(img1, img2)
 
 
 def test_mode_pair():
@@ -57,8 +57,8 @@ def test_mode_pair():
     assert img.mode == "L"
 
     # RGBA & L
-    # img = Image4Layer.hue(a_img, img2)
-    # assert img.mode == "RGBA"
+    img = Image4Layer.hue(a_img, img2)
+    assert img.mode == "RGBA"
 
 
 
