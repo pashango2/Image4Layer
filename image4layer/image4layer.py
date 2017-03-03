@@ -191,7 +191,7 @@ def separate_blend(cb, cs, func, eval_str="func(float(a), float(b))"):
 
         # cs has alpha
         if cs_alpha:
-            base_img = img.copy()
+            base_img = cb.copy()
             base_img.paste(img, mask=cs_alpha)
             img = base_img
 
