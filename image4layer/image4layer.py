@@ -97,7 +97,7 @@ class Image4Layer(object):
         )
 
     @staticmethod
-    def vivid(cb, cs):
+    def vivid_light(cb, cs):
         """
         1 - (1 - base) / (2 * ref)    | if ref < 0.5
         base / (1 - 2 * (ref - 0.5))  | otherwise
@@ -106,7 +106,7 @@ class Image4Layer(object):
         :type cb: Image.Image
         :type cs: Image.Image
         """
-        return separate_blend(cb, cs, _vivid)
+        return separate_blend(cb, cs, _vivid_light)
 
     @staticmethod
     def hue(cb, cs):
@@ -351,7 +351,7 @@ def _color_dodge(a, b):
     return dodge + (zero_area * 255)
 
 
-def _vivid(a, b):
+def _vivid_light(a, b):
     color_burn = _color_burn(a, b * 2)
     color_dodge = _color_dodge(a, 2 * (b - 128))
     return color_burn * (b < 128) + color_dodge * (b >= 128)
