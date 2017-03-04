@@ -6,7 +6,7 @@ setup(
     version=__version__,
     packages=['image4layer'],
     package_dir={'image4layer': 'image4layer'},
-    url='',
+    url='https://github.com/pashango2/Image4Layer',
     license='MIT',
     author='Toshiyuki Ishii',
     author_email='pashango2@gmail.com',
