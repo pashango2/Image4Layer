@@ -6,3 +6,5 @@
 tests/\.cache/v/cache/
 
 *.pyc
+
+dist/

@@ -8,9 +8,21 @@
 """
 # noinspection PyPackageRequirements
 from PIL import Image, ImageMath  # noqa
+from itertools import zip_longest
 
 
 class Image4Layer(object):
+    __version__ = "0.3"
+
+    @staticmethod
+    def normal(cb, cs):
+        """
+        :rtype: Image.Image
+        :type cb: Image.Image
+        :type cs: Image.Image
+        """
+        return separate_blend(cb, cs)
+
     @staticmethod
     def overlay(cb, cs):
         """
@@ -207,6 +219,68 @@ class Image4Layer(object):
         return separate_blend(cb, cs, eval_str="min(a, b)")
 
 
+def _split_color_and_alpha(img):
+    """
+    :type img: Image.Image
+    :rtype: (tuple(Image.Image), Image.Image)
+    """
+    if img.mode == "RGBA":
+        r, g, b, a = img.split()
+        return (r, g, b), a
+    elif img.mode == "LA":
+        l, a = img.split()
+        return (l,), a
+
+    bands = img.split()
+    return bands, None
+
+
+def split_separate_blend(cb, cs):
+    """
+    :type cb: Image.Image
+    :type cs: Image.Image
+    :rtype: str, generator[Image.Image, Image.Image], (Image.Image, Image.Image)
+    """
+    cbc, cba = _split_color_and_alpha(cb)
+    csc, csa = _split_color_and_alpha(cs)
+    alpha_pair = (cba, csa)
+
+    if cb.mode == cs.mode:
+        dst_mode = cb.mode
+        color_pair = zip(cbc, csc)
+    else:
+        dst_mode = cb.mode if len(cbc) >= len(csc) else cs.mode
+        if dst_mode in ("RGB", "L"):
+            dst_mode += "A" if cba else ""
+        last_band = cbc[-1] if len(cbc) < len(csc) else csc[-1]
+        color_pair = zip_longest(cbc, csc, fillvalue=last_band)
+
+    return dst_mode, color_pair, alpha_pair
+
+
+def _put_alpha(cb, img, alpha_pair):
+    a = None
+    if all(alpha_pair):
+        a = ImageMath.eval(
+            "a_s + a_b * (255 - a_s)",
+            a_b=alpha_pair[0],
+            a_s=alpha_pair[1]
+        ).convert("L")
+    elif alpha_pair[1]:
+        a = alpha_pair[1]
+
+    # cs has alpha
+    if a:
+        base_img = cb.copy()
+        base_img.paste(img, mask=a)
+        img = base_img
+
+    if alpha_pair[0]:
+        img.putalpha(alpha_pair[0])
+
+    return img
+
+
 def separate_blend(cb, cs, func=None, eval_str="func(float(a), float(b))"):
     """
     :type cb: Image.Image
@@ -215,33 +289,20 @@ def separate_blend(cb, cs, func=None, eval_str="func(float(a), float(b))"):
     :type eval_str: str
     :rtype: Image.Image
     """
-    cs_alpha = cs.split()[-1] if _check_alpha(cs) else None
-    cb_alpha = cb.split()[-1] if _check_alpha(cb) else None
+    dst_mode, color_pair, alpha_pair = split_separate_blend(cb, cs)
 
-    num_bands = len(cb.getbands())
-
-    if num_bands > 1:
-        bands = []
-        for a, b in _band_pair(cb, cs):
+    bands = []
+    if func:
+        for a, b in color_pair:
             bands.append(ImageMath.eval(eval_str, func=func, a=a, b=b).convert("L"))
-
-        if len(bands) < num_bands:
-            bands += cb.split()[len(bands):]
-
-        img = Image.merge(cb.mode, bands)
-
-        # cs has alpha
-        if cs_alpha:
-            base_img = cb.copy()
-            base_img.paste(img, mask=cs_alpha)
-            img = base_img
-
-        if cb_alpha:
-            img.putalpha(cb_alpha)
-
-        return img
     else:
-        return ImageMath.eval(eval_str, func=func, a=cb, b=cs).convert(cb.mode)
+        for a, b in color_pair:
+            bands.append(ImageMath.eval(eval_str, a=a, b=b).convert("L"))
+
+    color_mode = dst_mode if dst_mode not in ("RGBA", "LA") else dst_mode[:-1]
+    img = Image.merge(color_mode, bands)
+
+    return _put_alpha(cb, img, alpha_pair)
 
 
 def no_separate_blend(cb, cs, func):
@@ -251,14 +312,13 @@ def no_separate_blend(cb, cs, func):
     :type func: (tuple(ImageMath._Operand), tuple(ImageMath._Operand)) -> Image.Image
     :rtype: Image.Image
     """
-    cs_alpha = cs.split()[-1] if _check_alpha(cs) else None
-    cb_alpha = cb.split()[-1] if _check_alpha(cb) else None
+    dst_mode, color_pair, alpha_pair = split_separate_blend(cb, cs)
 
-    if cs_alpha:
-        cs = Image.composite(cs.convert("RGB"), Image.new("RGB", cs.size, (0, 0, 0)), cs_alpha)
-
-    cb_pack = [ImageMath.eval("float(c)/255", c=c) for c in cb.split()]
-    cs_pack = [ImageMath.eval("float(c)/255", c=c) for c in cs.split()]
+    cb_pack = []
+    cs_pack = []
+    for bb, bs in color_pair:
+        cb_pack.append(ImageMath.eval("float(c)/255", c=bb))
+        cs_pack.append(ImageMath.eval("float(c)/255", c=bs))
 
     r = ImageMath.eval(
         "func((cbr, cbg, cbb), (csr, csg, csb))",
@@ -266,17 +326,9 @@ def no_separate_blend(cb, cs, func):
         cbr=cb_pack[0], cbg=cb_pack[1], cbb=cb_pack[2],
         csr=cs_pack[0], csg=cs_pack[1], csb=cs_pack[2],
     )
-    result = Image.merge("RGB", [ImageMath.imagemath_convert(c * 255, "L").im for c in r])
+    img = Image.merge("RGB", [ImageMath.imagemath_convert(c * 255, "L").im for c in r])
 
-    if cs_alpha:
-        r = cb.copy()
-        r.paste(result, mask=cs_alpha)
-        result = r
-
-    if cb_alpha:
-        result.putalpha(cb_alpha)
-
-    return result
+    return _put_alpha(cb, img, alpha_pair)
 
 
 def _band_pair(cb, cs):
@@ -334,15 +386,23 @@ def set_sat(c, s):
     n = ImageMath.imagemath_min(ImageMath.imagemath_min(c[0], c[1]), c[2])
     cs = x - n
     not_even_area = ImageMath.imagemath_int(x != n)
+    # paint_area = None
 
     result = []
     for cc in c:
         max_area = ImageMath.imagemath_int(x == cc)
         min_area = ImageMath.imagemath_int(n == cc)
-        inv_max_area = (max_area ^ 1)
-        inv_min_area = (min_area ^ 1)
 
-        mid_area = inv_max_area & inv_min_area
+        # if paint_area is None:
+        #     paint_area = max_area & min_area
+        # else:
+        #     inv_paint_area = (paint_area ^ 1)
+        #     max_area &= inv_paint_area
+        #     min_area &= inv_paint_area
+        #     paint_area = paint_area | max_area | min_area
+
+        mid_area = (max_area ^ 1) & (min_area ^ 1)
+
         mid = (((cc - n) * s) / cs) * mid_area
         cc = ((s * max_area) + mid) * not_even_area
         result.append(cc)
@@ -369,13 +429,13 @@ def clip_color(c):
         c = [
             (_c * (n_l_0 ^ 1)) + ((l + ((_c - l) * l / l_m_n)) * n_l_0)
             for _c in c
-        ]
+            ]
 
     if bool(x_b_1):
         c = [
             (_c * (x_b_1 ^ 1)) + ((l + ((_c - l) * m_l / x_m_l)) * x_b_1)
             for _c in c
-        ]
+            ]
 
     return c
 

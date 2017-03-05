@@ -1,3 +1,3 @@
 from .image4layer import Image4Layer
 
-__version__ = '0.2'
+__version__ = Image4Layer.__version__
