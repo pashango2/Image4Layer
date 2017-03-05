@@ -1,10 +1,11 @@
 # Image4Layer
-Layer effects by pillow
+
+It is implemented by 'pillow' in blend mode of CSS3.
 
 
 ## Install
 
-```buildoutcfg
+```
 pip install image4layer
 ```
 
