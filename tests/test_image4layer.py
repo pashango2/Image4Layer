@@ -9,6 +9,7 @@ def test_duck():
     source = Image.open("ducky.png")
     backdrop = Image.open("backdrop.png")
 
+    Image4Layer.normal(backdrop, source)
     Image4Layer.multiply(backdrop, source)
 
 

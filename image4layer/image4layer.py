@@ -21,7 +21,7 @@ class Image4Layer(object):
         :type cb: Image.Image
         :type cs: Image.Image
         """
-        return separate_blend(cb, cs)
+        return separate_blend(cb, cs, eval_str="b")
 
     @staticmethod
     def overlay(cb, cs):
