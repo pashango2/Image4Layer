@@ -12,7 +12,7 @@ from itertools import zip_longest
 
 
 class Image4Layer(object):
-    __version__ = "0.4"
+    __version__ = "0.41"
 
     @staticmethod
     def normal(cb, cs):
@@ -21,7 +21,7 @@ class Image4Layer(object):
         :type cb: Image.Image
         :type cs: Image.Image
         """
-        return separate_blend(cb, cs)
+        return separate_blend(cb, cs, eval_str="b")
 
     @staticmethod
     def overlay(cb, cs):
