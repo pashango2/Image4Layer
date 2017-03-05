@@ -12,7 +12,7 @@ from itertools import zip_longest
 
 
 class Image4Layer(object):
-    __version__ = "0.3"
+    __version__ = "0.4"
 
     @staticmethod
     def normal(cb, cs):
@@ -126,7 +126,7 @@ class Image4Layer(object):
         :type cb: Image.Image
         :type cs: Image.Image
         """
-        return no_separate_blend(cb, cs, hue)
+        return no_separate_blend(cb, cs, _hue)
 
     @staticmethod
     def saturation(cb, cs):
@@ -135,7 +135,7 @@ class Image4Layer(object):
         :type cb: Image.Image
         :type cs: Image.Image
         """
-        return no_separate_blend(cb, cs, saturation)
+        return no_separate_blend(cb, cs, _saturation)
 
     @staticmethod
     def color(cb, cs):
@@ -144,7 +144,7 @@ class Image4Layer(object):
         :type cb: Image.Image
         :type cs: Image.Image
         """
-        return no_separate_blend(cb, cs, color)
+        return no_separate_blend(cb, cs, _color)
 
     @staticmethod
     def luminosity(cb, cs):
@@ -153,7 +153,7 @@ class Image4Layer(object):
         :type cb: Image.Image
         :type cs: Image.Image
         """
-        return no_separate_blend(cb, cs, luminosity)
+        return no_separate_blend(cb, cs, _luminosity)
 
     @staticmethod
     def difference(cb, cs):
@@ -331,33 +331,6 @@ def no_separate_blend(cb, cs, func):
     return _put_alpha(cb, img, alpha_pair)
 
 
-def _band_pair(cb, cs):
-    """
-    :type cb: Image.Image
-    :type cs: Image.Image
-    :rtype: collections.Iterable[Image.Image, Image.Image]
-    """
-    bands = []
-    for img in (cb, cs):
-        if _check_alpha(img):
-            bands.append(img.split()[:-1])
-        else:
-            bands.append(img.split())
-
-    b1_len = len(bands[0])
-    b2_len = len(bands[1])
-    for i in range(b1_len):
-        yield bands[0][i], bands[1][min(b2_len - 1, i)]
-
-
-def _check_alpha(img):
-    """
-    :type img: Image.Image
-    :rtype: bool
-    """
-    return img.mode in ("RGBA", "LA")
-
-
 def lum(c):
     """
     :type c: tuple(ImageMath._Operand)
@@ -386,21 +359,11 @@ def set_sat(c, s):
     n = ImageMath.imagemath_min(ImageMath.imagemath_min(c[0], c[1]), c[2])
     cs = x - n
     not_even_area = ImageMath.imagemath_int(x != n)
-    # paint_area = None
 
     result = []
     for cc in c:
         max_area = ImageMath.imagemath_int(x == cc)
         min_area = ImageMath.imagemath_int(n == cc)
-
-        # if paint_area is None:
-        #     paint_area = max_area & min_area
-        # else:
-        #     inv_paint_area = (paint_area ^ 1)
-        #     max_area &= inv_paint_area
-        #     min_area &= inv_paint_area
-        #     paint_area = paint_area | max_area | min_area
-
         mid_area = (max_area ^ 1) & (min_area ^ 1)
 
         mid = (((cc - n) * s) / cs) * mid_area
@@ -536,7 +499,7 @@ def _vivid_light(a, b):
     return color_burn * (b < 128) + color_dodge * (b >= 128)
 
 
-def hue(cb, cs):
+def _hue(cb, cs):
     """
     :type cb: (ImageMath._Operand)
     :type cs: (ImageMath._Operand)
@@ -545,7 +508,7 @@ def hue(cb, cs):
     return set_lum(set_sat(cs, sat(cb)), lum(cb))
 
 
-def saturation(cb, cs):
+def _saturation(cb, cs):
     """
     :type cb: (ImageMath._Operand)
     :type cs: (ImageMath._Operand)
@@ -554,7 +517,7 @@ def saturation(cb, cs):
     return set_lum(set_sat(cb, sat(cs)), lum(cb))
 
 
-def color(cb, cs):
+def _color(cb, cs):
     """
     :type cb: (ImageMath._Operand)
     :type cs: (ImageMath._Operand)
@@ -563,7 +526,7 @@ def color(cb, cs):
     return set_lum(cs, lum(cb))
 
 
-def luminosity(cb, cs):
+def _luminosity(cb, cs):
     """
     :type cb: (ImageMath._Operand)
     :type cs: (ImageMath._Operand)

@@ -26,7 +26,7 @@ def test_layer():
 
     Image4Layer.color_burn(img1, img2)
     Image4Layer.color_dodge(img1, img2)
-    Image4Layer.vivid(img1, img2)
+    Image4Layer.vivid_light(img1, img2)
 
     Image4Layer.darken(img1, img2)
     Image4Layer.lighten(img1, img2)
@@ -97,14 +97,18 @@ def test_mode_pair():
     # RGBA & L
     img = Image4Layer.overlay(a_img, img2.convert("L"))
     assert img.mode == "RGBA"
+
     # HSV & L
-    Image4Layer.overlay(img1.convert("HSV"), img2.convert("L"))
+    img = Image4Layer.overlay(img1.convert("HSV"), img2.convert("L"))
+    assert img.mode == "HSV"
+
     # CMYK & L
-    Image4Layer.overlay(img1.convert("CMYK"), img2.convert("L"))
+    img = Image4Layer.overlay(img1.convert("CMYK"), img2.convert("L"))
+    assert img.mode == "CMYK"
 
     # L & RGB
     img = Image4Layer.overlay(img2.convert("L"), img1.convert("RGB"))
-    assert img.mode == "L"
+    assert img.mode == "RGB"
 
     # RGBA & L
     img = Image4Layer.hue(a_img, img2)
