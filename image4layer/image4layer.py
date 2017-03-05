@@ -12,7 +12,7 @@ from itertools import zip_longest
 
 
 class Image4Layer(object):
-    __version__ = "0.4"
+    __version__ = "0.41"
 
     @staticmethod
     def normal(cb, cs):
