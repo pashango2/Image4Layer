@@ -15,7 +15,7 @@ except ImportError:
 
 
 class Image4Layer(object):
-    __version__ = "0.42"
+    __version__ = "0.43"
 
     @staticmethod
     def normal(cb, cs):
@@ -262,20 +262,15 @@ def split_separate_blend(cb, cs):
 
 
 def _put_alpha(cb, img, alpha_pair):
-    a = None
-    if all(alpha_pair):
-        a = ImageMath.eval(
-            "a_s + a_b * (255 - a_s)",
-            a_b=alpha_pair[0],
-            a_s=alpha_pair[1]
-        ).convert("L")
-    elif alpha_pair[1]:
-        a = alpha_pair[1]
-
-    # cs has alpha
-    if a:
+    """
+    :type cb: Image.Image
+    :type img: Image.Image
+    :type alpha_pair: tuple(Image.Image)
+    :rtype: Image.Image
+    """
+    if alpha_pair[1]:
         base_img = cb.copy()
-        base_img.paste(img, mask=a)
+        base_img.paste(img, mask=alpha_pair[1])
         img = base_img
 
     if alpha_pair[0]:
