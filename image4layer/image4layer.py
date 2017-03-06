@@ -8,11 +8,14 @@
 """
 # noinspection PyPackageRequirements
 from PIL import Image, ImageMath  # noqa
-from itertools import zip_longest
+try:
+    from itertools import zip_longest
+except ImportError:
+    from itertools import izip_longest as zip_longest
 
 
 class Image4Layer(object):
-    __version__ = "0.41"
+    __version__ = "0.42"
 
     @staticmethod
     def normal(cb, cs):
