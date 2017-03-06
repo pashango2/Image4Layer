@@ -42,7 +42,7 @@ Image4Layer.normal(backdrop, source)
 ```
 
 
-![png](output_5_0.png)
+![png](imgs/output_5_0.png)
 
 
 ### multiply
@@ -53,7 +53,7 @@ Image4Layer.multiply(backdrop, source)
 ```
 
 
-![png](output_7_0.png)
+![png](imgs/output_7_0.png)
 
 
 ### screen
@@ -64,7 +64,7 @@ Image4Layer.screen(backdrop, source)
 ```
 
 
-![png](output_9_0.png)
+![png](imgs/output_9_0.png)
 
 
 ### overlay
@@ -75,7 +75,7 @@ Image4Layer.overlay(backdrop, source)
 ```
 
 
-![png](output_11_0.png)
+![png](imgs/output_11_0.png)
 
 
 ### darken
@@ -86,7 +86,7 @@ Image4Layer.darken(backdrop, source)
 ```
 
 
-![png](output_13_0.png)
+![png](imgs/output_13_0.png)
 
 
 ### lighten
@@ -97,7 +97,7 @@ Image4Layer.lighten(backdrop, source)
 ```
 
 
-![png](output_15_0.png)
+![png](imgs/output_15_0.png)
 
 
 ### color-dodge
@@ -108,7 +108,7 @@ Image4Layer.color_dodge(backdrop, source)
 ```
 
 
-![png](output_17_0.png)
+![png](imgs/output_17_0.png)
 
 
 ### color-burn
@@ -119,7 +119,7 @@ Image4Layer.color_burn(backdrop, source)
 ```
 
 
-![png](output_19_0.png)
+![png](imgs/output_19_0.png)
 
 
 ### hard-light
@@ -130,7 +130,7 @@ Image4Layer.hard_light(backdrop, source)
 ```
 
 
-![png](output_21_0.png)
+![png](imgs/output_21_0.png)
 
 
 ### soft-light
@@ -141,7 +141,7 @@ Image4Layer.soft_light(backdrop, source)
 ```
 
 
-![png](output_23_0.png)
+![png](imgs/output_23_0.png)
 
 
 ### difference
@@ -152,7 +152,7 @@ Image4Layer.difference(backdrop, source)
 ```
 
 
-![png](output_25_0.png)
+![png](imgs/output_25_0.png)
 
 
 ### exclusion
@@ -163,7 +163,7 @@ Image4Layer.exclusion(backdrop, source)
 ```
 
 
-![png](output_27_0.png)
+![png](imgs/output_27_0.png)
 
 
 # Non-separable blend modes
@@ -176,7 +176,7 @@ Image4Layer.hue(backdrop, source)
 ```
 
 
-![png](output_30_0.png)
+![png](imgs/output_30_0.png)
 
 
 ### saturation
@@ -187,7 +187,7 @@ Image4Layer.saturation(backdrop, source)
 ```
 
 
-![png](output_32_0.png)
+![png](imgs/output_32_0.png)
 
 
 ### color
@@ -198,7 +198,7 @@ Image4Layer.color(backdrop, source)
 ```
 
 
-![png](output_34_0.png)
+![png](imgs/output_34_0.png)
 
 
 ### luminosity
@@ -209,7 +209,7 @@ Image4Layer.luminosity(backdrop, source)
 ```
 
 
-![png](output_36_0.png)
+![png](imgs/output_36_0.png)
 
 
 # More blend modes
@@ -222,7 +222,7 @@ Image4Layer.vivid_light(backdrop, source)
 ```
 
 
-![png](output_39_0.png)
+![png](imgs/output_39_0.png)
 
 
 ### pin-light
@@ -233,7 +233,7 @@ Image4Layer.pin_light(backdrop, source)
 ```
 
 
-![png](output_41_0.png)
+![png](imgs/output_41_0.png)
 
 
 ### linear-dodge
@@ -244,7 +244,7 @@ Image4Layer.linear_dodge(backdrop, source)
 ```
 
 
-![png](output_43_0.png)
+![png](imgs/output_43_0.png)
 
 
 ### subtract
@@ -255,5 +255,5 @@ Image4Layer.subtract(backdrop, source)
 ```
 
 
-![png](output_45_0.png)
+![png](imgs/output_45_0.png)
 
