@@ -10,7 +10,7 @@ python:
   - "3.6"
   
 install:
-  - pip install pillow, flake8, pytest>=3.0
+  - pip install pillow flake8 pytest>=3.0
 
 script:
   - flake8
