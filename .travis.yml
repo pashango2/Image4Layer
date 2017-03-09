@@ -13,4 +13,4 @@ install:
   - pip install pytest>=3.0
 
 script:
-  - cd tests; py.test
+  - py.test
