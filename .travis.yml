@@ -11,3 +11,6 @@ python:
   
 install:
   - pip install pillow
+
+script:
+  - flake8
