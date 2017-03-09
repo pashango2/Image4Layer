@@ -1,6 +1,6 @@
 
 #  Image4Layer
-https://travis-ci.org/pashango2/Image4Layer.svg?branch=master
+![](https://travis-ci.org/pashango2/Image4Layer.svg?branch=master)
 
 It is implemented by 'pillow' in blend mode of CSS3. And more...
 
