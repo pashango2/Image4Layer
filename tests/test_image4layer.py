@@ -1,5 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import sys
+import os
+sys.path.insert(0, os.getcwd())
+os.chdir(os.path.dirname(__file__))
+
 from PIL import Image
 from image4layer import Image4Layer
 from image4layer.image4layer import split_separate_blend
